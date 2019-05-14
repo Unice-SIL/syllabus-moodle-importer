@@ -1,0 +1,23 @@
+{
+  "name": "unicesil/syllabus-moodle-importer-bundle",
+  "description": "Importer to import data in Syllabus from Moodle",
+  "type" : "symfony-bundle",
+  "author": [
+    {
+      "name": "Frédéric Casazza",
+      "email": "frederic.casazza@univ-cotedazur.fr"
+    }
+  ],
+  "keywords" : [
+    "Unice-SIL", "Unice", "UNS", "Syllabus", "Moodle", "Importer"
+  ],
+  "autoload": {
+    "psr-4": {
+      "UniceSIL\\SyllabusMoodleImporterBundle\\": ""
+    }
+  },
+  "require": {
+    "php": ">=7.1",
+    "unicesil/syllabus-importer-toolkit": "dev-master"
+  }
+}

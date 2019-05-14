@@ -1,0 +1,8 @@
+services:
+
+    unicesil.syllabus_moodle_importer.permission:
+        class: UniceSIL\SyllabusMoodleImporterBundle\Importer\PermissionImporter
+        public: true
+        arguments: [ ]
+
+
