@@ -9,6 +9,8 @@ use UniceSIL\SyllabusImporterToolkit\Permission\PermissionCollection;
 use UniceSIL\SyllabusImporterToolkit\Permission\PermissionImporterInterface;
 use UniceSIL\SyllabusMoodleImporterBundle\Entity\Course;
 use UniceSIL\SyllabusMoodleImporterBundle\Entity\CourseInfo;
+use UniceSIL\SyllabusMoodleImporterBundle\Entity\Permission;
+use UniceSIL\SyllabusMoodleImporterBundle\Entity\User;
 
 class PermissionImporter implements PermissionImporterInterface
 {
@@ -94,20 +96,43 @@ class PermissionImporter implements PermissionImporterInterface
 
                         // PERMISSIONS
                         $permissions = new PermissionCollection();
-                        $permissionMoodle = $this->request(
-                            'GET',
+                        $permissionsMoodle = $this->request(
+                            'POST',
                             [
                                 'query' => [
                                     'moodlewsrestformat' => 'json',
                                     'wstoken' => $this->token,
                                     'wsfunction' => "core_enrol_get_enrolled_users_with_capability",
                                     'coursecapabilities' => [
-                                        ['courseid' => $id, 'capabilities' => 'moodle/course:markcomplete']
+                                        ['courseid' => $id, 'capabilities' => ['moodle/course:markcomplete'] ]
                                     ]
                                 ]
                             ]
                         );
-                        dump($permissionMoodle);
+
+                        if(is_array($permissionsMoodle)) $permissionsMoodle = current($permissionsMoodle);
+
+                        if (array_key_exists('users', $permissionsMoodle)) {
+                            foreach ($permissionsMoodle['users'] as $userMoodle){
+                                if(array_key_exists('username', $userMoodle)) {
+                                    $user = new User();
+                                    $user->setUsername($userMoodle['username']);
+                                    if (array_key_exists('firstname', $userMoodle)) {
+                                        $user->setFirstname($userMoodle['firstname']);
+                                    }
+                                    if (array_key_exists('lastname', $userMoodle)) {
+                                        $user->setLastname($userMoodle['lastname']);
+                                    }
+                                    if (array_key_exists('email', $userMoodle)) {
+                                        $user->setEmail($userMoodle['email']);
+                                    }
+                                    $permission = new Permission();
+                                    $permission->setPermission('WRITE')
+                                        ->setUser($user);
+                                    $permissions->append($permission);
+                                }
+                            }
+                        }
 
                         // COURSE INFO
                         $courseInfos = new CourseInfoCollection();
@@ -115,9 +140,12 @@ class PermissionImporter implements PermissionImporterInterface
                             $courseInfo = new CourseInfo();
                             $courseInfo->setYearId($year)
                                 ->setCoursePermissions($permissions);
+                            $courseInfos->append($courseInfo);
                         }
                         $course->setCourseInfos($courseInfos);
                         $courses->append($course);
+
+                        break;
                     }
                 }catch (\Exception $e){
                     dump($e);
