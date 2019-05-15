@@ -85,74 +85,76 @@ class PermissionImporter implements PermissionImporterInterface
                 ]
             ]);
             foreach ($coursesMoodle as $courseMoodle){
-                try {
+
                     if (array_key_exists('id', $courseMoodle) && array_key_exists('idnumber', $courseMoodle)) {
                         $id = $courseMoodle['id'];
                         $etbId = $courseMoodle['idnumber'];
 
-                        // COURSE
-                        $course = new Course();
-                        $course->setEtbId($etbId);
+                        try {
+                            // COURSE
+                            $course = new Course();
+                            $course->setEtbId($etbId);
 
-                        // PERMISSIONS
-                        $permissions = new PermissionCollection();
-                        $permissionsMoodle = $this->request(
-                            'POST',
-                            [
-                                'query' => [
-                                    'moodlewsrestformat' => 'json',
-                                    'wstoken' => $this->token,
-                                    'wsfunction' => "core_enrol_get_enrolled_users_with_capability",
-                                    'coursecapabilities' => [
-                                        ['courseid' => $id, 'capabilities' => ['moodle/course:markcomplete'] ]
+                            // PERMISSIONS
+                            $permissions = new PermissionCollection();
+                            $permissionsMoodle = $this->request(
+                                'POST',
+                                [
+                                    'query' => [
+                                        'moodlewsrestformat' => 'json',
+                                        'wstoken' => $this->token,
+                                        'wsfunction' => "core_enrol_get_enrolled_users_with_capability",
+                                        'coursecapabilities' => [
+                                            ['courseid' => $id, 'capabilities' => ['moodle/course:markcomplete']]
+                                        ]
                                     ]
                                 ]
-                            ]
-                        );
+                            );
 
-                        if(is_array($permissionsMoodle)) $permissionsMoodle = current($permissionsMoodle);
+                            if (is_array($permissionsMoodle)) {
+                                $permissionsMoodle = current($permissionsMoodle);
+                            }
 
-                        if (array_key_exists('users', $permissionsMoodle)) {
-                            foreach ($permissionsMoodle['users'] as $userMoodle){
-                                if(array_key_exists('username', $userMoodle)) {
-                                    $user = new User();
-                                    $user->setUsername($userMoodle['username']);
-                                    if (array_key_exists('firstname', $userMoodle)) {
-                                        $user->setFirstname($userMoodle['firstname']);
+                            if (array_key_exists('users', $permissionsMoodle)) {
+                                foreach ($permissionsMoodle['users'] as $userMoodle) {
+                                    if (array_key_exists('username', $userMoodle)) {
+                                        $user = new User();
+                                        $user->setUsername($userMoodle['username']);
+                                        if (array_key_exists('firstname', $userMoodle)) {
+                                            $user->setFirstname($userMoodle['firstname']);
+                                        }
+                                        if (array_key_exists('lastname', $userMoodle)) {
+                                            $user->setLastname($userMoodle['lastname']);
+                                        }
+                                        if (array_key_exists('email', $userMoodle)) {
+                                            $user->setEmail($userMoodle['email']);
+                                        }
+                                        $permission = new Permission();
+                                        $permission->setPermission('WRITE')
+                                            ->setUser($user);
+                                        $permissions->append($permission);
                                     }
-                                    if (array_key_exists('lastname', $userMoodle)) {
-                                        $user->setLastname($userMoodle['lastname']);
-                                    }
-                                    if (array_key_exists('email', $userMoodle)) {
-                                        $user->setEmail($userMoodle['email']);
-                                    }
-                                    $permission = new Permission();
-                                    $permission->setPermission('WRITE')
-                                        ->setUser($user);
-                                    $permissions->append($permission);
                                 }
                             }
-                        }
 
-                        // COURSE INFO
-                        $courseInfos = new CourseInfoCollection();
-                        foreach ($this->years as $year) {
-                            $courseInfo = new CourseInfo();
-                            $courseInfo->setYearId($year)
-                                ->setCoursePermissions($permissions);
-                            $courseInfos->append($courseInfo);
-                        }
-                        $course->setCourseInfos($courseInfos);
-                        $courses->append($course);
+                            // COURSE INFO
+                            $courseInfos = new CourseInfoCollection();
+                            foreach ($this->years as $year) {
+                                $courseInfo = new CourseInfo();
+                                $courseInfo->setYearId($year)
+                                    ->setCoursePermissions($permissions);
+                                $courseInfos->append($courseInfo);
+                            }
+                            $course->setCourseInfos($courseInfos);
+                            $courses->append($course);
 
-                        break;
+                        } catch (\Exception $e) {
+                            sprintf("Error while exporting permissions for course %s : %s", $id, $e->getMessage());
+                        }
                     }
-                }catch (\Exception $e){
-                    dump($e);
-                }
             }
         }catch (\Exception $e){
-            dump($e);
+            sprintf("%s", $e->getMessage());
         }
         return $courses;
     }
