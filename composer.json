@@ -19,6 +19,6 @@
   "require": {
     "php": ">=7.1",
     "guzzlehttp/guzzle": "^6.3",
-    "unicesil/syllabus-importer-toolkit": "dev-master"
+    "unicesil/syllabus-importer-toolkit": ">=1.0"
   }
 }
